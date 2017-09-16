@@ -12,7 +12,7 @@ public class VoxelSystemEditor : Editor {
 
         if(base.DrawDefaultInspector() && t.m_autoUpdate && Application.isPlaying)
         {
-            t.DrawAllChunks();
+            t.ThreadDrawAll();
         }
 
         if (Application.isPlaying)
@@ -24,7 +24,7 @@ public class VoxelSystemEditor : Editor {
 
             if (GUILayout.Button("Update"))
             {
-                t.DrawAllChunks();
+                t.ThreadDrawAll();
             }
         }
     }

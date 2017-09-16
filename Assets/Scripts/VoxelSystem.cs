@@ -6,12 +6,12 @@ using System.Threading;
 
 public class VoxelSystem : MonoBehaviour {
 
-    public enum DisplayMode {SimpleMesh, NoDensity, Density};
+    public enum DisplayMode {NoDensity, Density};
     public DisplayMode m_displayMode;
 
-    public int m_size = 10;
-    public int m_chunkSize = 16;
-    public float m_scale = 0.1f;
+    public int m_size = 8;
+    public int m_chunkSize = 32;
+    public float m_noiseScale = 20f;
 
     private VoxelChunkDataType[, ,] m_chunks;
     private Dictionary<Vector3, VoxelChunk> m_loadedChunks;
@@ -46,37 +46,9 @@ public class VoxelSystem : MonoBehaviour {
                 for (int z = 0; z < m_size; z++)
                 {
                     GenerateNewChunk(RecievedNewChunk, x, y, z);
-                    //m_chunks[x, y, z] = new VoxelChunkDataType(this, new Vector3(x,y,z), m_chunkSize);
-                    //m_chunks[x, y, z].GenerateNew();
                 }
             }
         }
-        //Debug.Log("Generate Time: " + (System.DateTime.Now - starttime));
-
-        //ThreadDrawAll();
-
-        //noise3D = new Texture3D(m_size * m_chunkSize, m_size * m_chunkSize, m_size * m_chunkSize, TextureFormat.ARGB32, false);
-        //noise3D.filterMode = FilterMode.Point;
-
-        //DrawAllChunks();
-    }
-
-    public bool NeigborsLoaded(Vector3 pos)
-    {
-        if (!m_loadedChunks.ContainsKey(pos + Vector3.left))
-            return false;
-        if (!m_loadedChunks.ContainsKey(pos + Vector3.right))
-            return false;
-        if (!m_loadedChunks.ContainsKey(pos + Vector3.up))
-            return false;
-        if (!m_loadedChunks.ContainsKey(pos + Vector3.down))
-            return false;
-        if (!m_loadedChunks.ContainsKey(pos + Vector3.forward))
-            return false;
-        if (!m_loadedChunks.ContainsKey(pos + Vector3.back))
-            return false;
-
-        return true;
     }
 
     public void GenerateNewChunk(Action<VoxelChunkDataType> callback, int x, int y, int z)
@@ -161,51 +133,12 @@ public class VoxelSystem : MonoBehaviour {
         }
     }
 
+    [Obsolete("Use ThreadDrawAll()")]
     public void DrawAllChunks()
     {
-        //float[, ,] noise = Noise3D.GenerateNoiseMap(m_size * m_chunkSize, m_scale);
-        //int n = m_size * m_chunkSize;
-        //Color[] colors = new Color[n * n * n];
-        //for (int x = 0; x < noise.GetLength(0); x++)
-        //{
-        //    for (int y = 0; y < noise.GetLength(1); y++)
-        //    {
-        //        for (int z = 0; z < noise.GetLength(2); z++)
-        //        {
-        //            float t = noise[x, y, z];
-        //            colors[x + y * n + z * n * n] = new Color(t, t, t, 1f);
-        //        }
-        //    }
-        //}
-        //noise3D.SetPixels(colors);
-        //noise3D.Apply();
-
         System.DateTime starttime = new System.DateTime(System.DateTime.Now.Ticks);
 
-        if (m_displayMode == DisplayMode.SimpleMesh && Application.isPlaying)
-        {
-            for (int x = 0; x < m_chunks.GetLength(0); x++)
-            {
-                for (int y = 0; y < m_chunks.GetLength(1); y++)
-                {
-                    for (int z = 0; z < m_chunks.GetLength(2); z++)
-                    {
-                        Vector3 pos = new Vector3(x, y, z);
-                        if (!m_loadedChunks.ContainsKey(pos))
-                        {
-                            GameObject gobject = new GameObject("Chunk: " + pos, typeof(VoxelChunk));
-                            gobject.transform.position = pos * m_chunkSize;
-                            gobject.transform.SetParent(transform);
-                            VoxelChunk chunk = gobject.GetComponent<VoxelChunk>();
-                            chunk.m_data = m_chunks[x, y, z];
-                            m_loadedChunks.Add(pos, chunk);
-                        }
-                        m_loadedChunks[pos].UpdateSimpleMesh();
-                    }
-                }
-            }
-        }
-        else if (m_displayMode == DisplayMode.NoDensity && Application.isPlaying)
+        if (m_displayMode == DisplayMode.NoDensity && Application.isPlaying)
         {
             for (int x = 0; x < m_chunks.GetLength(0); x++)
             {

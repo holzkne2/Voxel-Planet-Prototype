@@ -308,11 +308,8 @@ public class VoxelChunk : MonoBehaviour {
             };
     #endregion
 
-    public void DrawNoDensity()
+    public MeshData DrawNoDensity()
     {
-        if (m_data == null)
-            return;
-
         MeshData meshData = new MeshData();
 
         for (int x = 0; x < m_data.m_voxels.GetLength(0); x++)
@@ -361,9 +358,7 @@ public class VoxelChunk : MonoBehaviour {
             }
         }
 
-        GetComponent<MeshFilter>().mesh = meshData.CreateMesh();
-        GetComponent<MeshRenderer>().sharedMaterial = m_data.m_system.m_material;
-        GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.TwoSided;
+        return meshData;
     }
 
     public MeshData DrawDensity()
@@ -507,10 +502,13 @@ public class VoxelChunk : MonoBehaviour {
     {
         while (m_data == null)
             Thread.Sleep(100);
-        //while (m_data.m_system.NeigborsLoaded(m_data.m_postion)) // Warning, never ending on edges
-        //    Thread.Sleep(100);
 
-        MeshData meshData = DrawDensity();
+        MeshData meshData;
+        if (m_data.m_system.m_displayMode == VoxelSystem.DisplayMode.Density)
+            meshData = DrawDensity();
+        else
+            meshData = DrawNoDensity(); 
+
         lock (m_data.m_system.m_meshDataInfoQueue)
         {
             m_data.m_system.m_meshDataInfoQueue.Enqueue(new ThreadInfo<MeshData>(callback, meshData));
