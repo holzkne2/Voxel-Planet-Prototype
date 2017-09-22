@@ -471,7 +471,7 @@ public class VoxelChunk : MonoBehaviour {
                 {
                     for (int z = 0; z < m_data.m_voxels.GetLength(2); z++)
                     {
-                        Gizmos.color = Color.HSVToRGB(Mathf.InverseLerp(0f, 16.6f, m_data.m_voxels[x, y, z].m_density), 1, 1);
+                        Gizmos.color = Color.HSVToRGB(Mathf.InverseLerp(0f, 2f, m_data.m_voxels[x, y, z].m_density), 1, 1);
                         //Gizmos.DrawCube(new Vector3(x, y, z) + Vector3.one / 2 + m_data.m_postion * m_data.m_size, Vector3.one * 0.3f);
                         Gizmos.DrawCube(new Vector3(x, y, z) + m_data.m_postion * m_data.m_size, Vector3.one * 0.3f);
                     }

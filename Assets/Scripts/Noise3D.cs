@@ -4,6 +4,7 @@ using UnityEngine;
 
 public static class Noise3D {
 
+    [System.Obsolete("Use GetNoise() instead of creating map")]
 	public static float[, ,] GenerateNoiseMap(int size, float scale)
     {
         float[, ,] noiseMap = new float[size, size, size];
