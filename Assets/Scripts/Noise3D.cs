@@ -31,17 +31,68 @@ public static class Noise3D {
         return noiseMap;
     }
 
-    public static float GetNoise(int x, int y, int z, float scale)
+    public static float GetTerrainDensity(int x, int z)
     {
-        float sampleX = x / scale;
-        float sampleY = y / scale;
-        float sampleZ = z / scale;
+        const float elevationScale = 120f;
+        const float roughnessScale = 70f;
+        const float detailScale = 20f;
 
-        float perlinValue = Perlin3D(sampleX, sampleY, sampleZ);
-        return perlinValue;
+        float seed = 1502.023f;
+
+        float elevation = Mathf.PerlinNoise(x / elevationScale + seed, z / elevationScale + seed);
+        float roughness = Mathf.PerlinNoise(x / roughnessScale + seed, z / roughnessScale + seed);
+        float detail = Mathf.PerlinNoise(x / detailScale + seed, z / detailScale + seed) * 0.1f;
+        return (elevation + (roughness * detail)) * 64 + 64;
     }
 
-    private static float Perlin3D(float x, float y, float z)
+    public static float GetTerrainDensity(int x, int z, float scale, int octaves, float persistance, float lacunarity)
+    {
+        if (scale <= 0)
+            scale = 0.0001f;
+
+        float amplitude = 1;
+        float frequency = 1;
+        float noiseHeight = 0;
+
+        for (int i = 0; i < octaves; i++)
+        {
+            float sampleX = x / scale * frequency;
+            float sampleZ = z / scale * frequency;
+
+            float perlinValue = Mathf.PerlinNoise(sampleX, sampleZ);
+            noiseHeight = perlinValue * amplitude;
+
+            amplitude *= persistance;
+            frequency *= lacunarity;
+        }
+        return noiseHeight * 64 + 64;
+    }
+
+    public static float GetNoise(int x, int y, int z, float scale, int octaves, float persistance, float lacunarity)
+    {
+        if (scale <= 0)
+            scale = 0.0001f;
+
+        float amplitude = 1;
+        float frequency = 1;
+        float noiseHeight = 0;
+
+        for (int i = 0; i < octaves; i++)
+        {
+            float sampleX = x / scale * frequency;
+            float sampleY = y / scale * frequency;
+            float sampleZ = z / scale * frequency;
+
+            float perlinValue = Perlin3D(sampleX, sampleY, sampleZ) * 2 - 1;
+            noiseHeight = perlinValue * amplitude;
+
+            amplitude *= persistance;
+            frequency *= lacunarity;
+        }
+        return noiseHeight;
+    }
+
+    public static float Perlin3D(float x, float y, float z)
     {
         float ab = Mathf.PerlinNoise(x,y);
         float bc = Mathf.PerlinNoise(x,y);

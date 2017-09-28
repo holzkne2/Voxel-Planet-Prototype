@@ -10,8 +10,13 @@ public class VoxelSystem : MonoBehaviour {
     public DisplayMode m_displayMode;
 
     public int m_size = 8;
-    public int m_chunkSize = 32;
+    public readonly int m_sizeHeight = 2;
+    public readonly int m_chunkWidth = 16;
+    public readonly int m_chunkHeight = 128;
     public float m_noiseScale = 20f;
+    public int m_noiseOcative = 8;
+    public float m_noisePersistanc = 1f;
+    public float m_noiseLacunarity = 1f;
 
     private VoxelChunkDataType[, ,] m_chunks;
     private Dictionary<Vector3, VoxelChunk> m_loadedChunks;
@@ -37,48 +42,65 @@ public class VoxelSystem : MonoBehaviour {
         m_startTime = new System.DateTime(System.DateTime.Now.Ticks);
         m_meshGeneratedCount = 0;
         m_chunksDataLoaded = 0;
-        m_chunks = new VoxelChunkDataType[m_size, m_size, m_size];
+        m_chunks = new VoxelChunkDataType[m_size, m_sizeHeight, m_size];
         m_loadedChunks = new Dictionary<Vector3, VoxelChunk>();
         for (int x = 0; x < m_size; x++)
         {
-            for (int y = 0; y < m_size; y++)
+            for (int y = 0; y < m_sizeHeight; y++)
             {
                 for (int z = 0; z < m_size; z++)
                 {
-                    GenerateNewChunk(RecievedNewChunk, x, y, z);
+                    GenerateThreadInfo info = new GenerateThreadInfo(RecievedNewChunk, x, y, z);
+                    ThreadPool.QueueUserWorkItem(new WaitCallback(GenerateNewChunkThread), info);
+                    //GenerateNewChunk(RecievedNewChunk, x, y, z);
                 }
             }
         }
     }
 
-    public void GenerateNewChunk(Action<VoxelChunkDataType> callback, int x, int y, int z)
-    {
-        ThreadStart threadStart = delegate
-        {
-            GenerateNewChunkThread(callback, x, y, z);
-        };
+    //public void GenerateNewChunk(Action<VoxelChunkDataType> callback, int x, int y, int z)
+    //{
+    //    ThreadStart threadStart = delegate
+    //    {
+    //        GenerateNewChunkThread(callback, x, y, z);
+    //    };
 
-        new Thread(threadStart).Start();
-    }
+    //    new Thread(threadStart).Start();
+    //}
 
-    void GenerateNewChunkThread(Action<VoxelChunkDataType> callback, int x, int y, int z)
+    //void GenerateNewChunkThread(Action<VoxelChunkDataType> callback, int x, int y, int z)
+    //{
+    //    VoxelChunkDataType chunk = new VoxelChunkDataType(this, new Vector3(x, y, z));
+    //    chunk.GenerateNew();
+    //    lock (m_chunks)
+    //    {
+    //        m_chunks[x, y, z] = chunk;
+    //    }
+    //    lock (m_chunkDataInfoQueue)
+    //    {
+    //        m_chunkDataInfoQueue.Enqueue(new ThreadInfo<VoxelChunkDataType>(callback, chunk));
+    //    }
+    //}
+
+    void GenerateNewChunkThread(object obj)
     {
-        VoxelChunkDataType chunk = new VoxelChunkDataType(this, new Vector3(x, y, z), m_chunkSize);
+        GenerateThreadInfo info = obj as GenerateThreadInfo;
+        VoxelChunkDataType chunk = new VoxelChunkDataType(this, new Vector3(info.m_x, info.m_y, info.m_z));
         chunk.GenerateNew();
         lock (m_chunks)
         {
-            m_chunks[x, y, z] = chunk;
+            m_chunks[info.m_x, info.m_y, info.m_z] = chunk;
         }
         lock (m_chunkDataInfoQueue)
         {
-            m_chunkDataInfoQueue.Enqueue(new ThreadInfo<VoxelChunkDataType>(callback, chunk));
+            m_chunkDataInfoQueue.Enqueue(new ThreadInfo<VoxelChunkDataType>(info.m_callback, chunk));
         }
     }
 
     void RecievedNewChunk(VoxelChunkDataType chunk)
     {
         m_chunksDataLoaded++;
-        if (m_chunksDataLoaded == m_size * m_size * m_size)
+        if (m_chunksDataLoaded == m_size * m_size * m_sizeHeight)
             ThreadDrawAll();
     }
 
@@ -98,30 +120,34 @@ public class VoxelSystem : MonoBehaviour {
 
         if (m_meshDataInfoQueue.Count > 0)
         {
-            for (int i = 0; i < m_meshDataInfoQueue.Count; i++)
+            lock (m_meshDataInfoQueue)
             {
-                ThreadInfo<MeshData> threadInfo = m_meshDataInfoQueue.Dequeue();
-                threadInfo.m_callback(threadInfo.m_parameter);
-                m_meshGeneratedCount++;
-                if (m_meshGeneratedCount == m_size * m_size * m_size)
-                    Debug.Log("Generate Time: " + (System.DateTime.Now - m_startTime));
+                for (int i = 0; i < m_meshDataInfoQueue.Count; i++)
+                {
+                    ThreadInfo<MeshData> threadInfo = m_meshDataInfoQueue.Dequeue();
+                    threadInfo.m_callback(threadInfo.m_parameter);
+                    m_meshGeneratedCount++;
+                    if (m_meshGeneratedCount == m_size * m_size * m_sizeHeight)
+                        Debug.Log("Generate Time: " + (System.DateTime.Now - m_startTime));
+                }
             }
         }
     }
 
     public void ThreadDrawAll()
     {
-        for (int x = 0; x < m_chunks.GetLength(0); x++)
+        for (int x = 0; x < m_size; x++)
         {
-            for (int y = 0; y < m_chunks.GetLength(1); y++)
+            for (int y = 0; y < m_sizeHeight; y++)
             {
-                for (int z = 0; z < m_chunks.GetLength(2); z++)
+                for (int z = 0; z < m_size; z++)
                 {
                     Vector3 pos = new Vector3(x, y, z);
                     if (!m_loadedChunks.ContainsKey(pos))
                     {
                         GameObject gobject = new GameObject("Chunk: " + pos, typeof(VoxelChunk));
-                        gobject.transform.position = pos * m_chunkSize;
+                        //gobject.hideFlags = HideFlags.HideInHierarchy;
+                        gobject.transform.position = new Vector3(pos.x * m_chunkWidth, pos.y * m_chunkHeight, pos.z * m_chunkWidth);
                         gobject.transform.SetParent(transform);
                         VoxelChunk chunk = gobject.GetComponent<VoxelChunk>();
                         chunk.m_data = m_chunks[x, y, z];
@@ -133,6 +159,7 @@ public class VoxelSystem : MonoBehaviour {
         }
     }
 
+    /*
     [Obsolete("Use ThreadDrawAll()")]
     public void DrawAllChunks()
     {
@@ -150,10 +177,10 @@ public class VoxelSystem : MonoBehaviour {
                         if (!m_loadedChunks.ContainsKey(pos))
                         {
                             GameObject gobject = new GameObject("Chunk: " + pos, typeof(VoxelChunk));
-                            gobject.transform.position = pos * m_chunkSize;
+                            gobject.transform.position = pos * m_chunkWidth;
                             gobject.transform.SetParent(transform);
                             VoxelChunk chunk = gobject.GetComponent<VoxelChunk>();
-                            chunk.m_data = m_chunks[x, y, z];
+                            chunk.m_data = m_chunks[x, z];
                             m_loadedChunks.Add(pos, chunk);
                         }
                         m_loadedChunks[pos].DrawNoDensity();
@@ -173,10 +200,10 @@ public class VoxelSystem : MonoBehaviour {
                         if (!m_loadedChunks.ContainsKey(pos))
                         {
                             GameObject gobject = new GameObject("Chunk: " + pos, typeof(VoxelChunk));
-                            gobject.transform.position = pos * m_chunkSize;
+                            gobject.transform.position = pos * m_chunkWidth;
                             gobject.transform.SetParent(transform);
                             VoxelChunk chunk = gobject.GetComponent<VoxelChunk>();
-                            chunk.m_data = m_chunks[x, y, z];
+                            chunk.m_data = m_chunks[x, z];
                             m_loadedChunks.Add(pos, chunk);
                         }
                         m_loadedChunks[pos].DrawDensity();
@@ -187,6 +214,7 @@ public class VoxelSystem : MonoBehaviour {
 
         Debug.Log("Draw All Time: " + (System.DateTime.Now - starttime));
     }
+    */
 
     public byte GetCase(int wx, int wy, int wz)
     {
@@ -311,20 +339,41 @@ public class VoxelSystem : MonoBehaviour {
 
     public VoxelDataType GetVoxel(int wx, int wy, int wz)
     {
-        int max = m_size * m_chunkSize;
-        if (wx < 0 || wy < 0 || wz < 0 || wx >= max || wy >= max || wz >= max)
+        int maxWidth = m_size * m_chunkWidth;
+        if (wx < 0 || wy < 0 || wz < 0 || wx >= maxWidth || wy >= (m_sizeHeight * m_chunkHeight) || wz >= maxWidth)
             return null;
-
-        return m_chunks[wx / m_chunkSize, wy / m_chunkSize, wz / m_chunkSize].m_voxels[wx % m_chunkSize, wy % m_chunkSize, wz % m_chunkSize];
+        return m_chunks[wx / m_chunkWidth, wy / m_chunkHeight, wz / m_chunkWidth].m_voxels[wx % m_chunkWidth, wy % m_chunkHeight, wz % m_chunkWidth];
     }
 
+    public class GenerateThreadInfo
+    {
+        public readonly Action<VoxelChunkDataType> m_callback;
+        public readonly int m_x;
+        public readonly int m_y;
+        public readonly int m_z;
+
+        public GenerateThreadInfo(Action<VoxelChunkDataType> callback, int x, int y, int z)
+        {
+            m_callback = callback;
+            m_x = x;
+            m_y = y;
+            m_z = z;
+        }
+    }
 }
+
 public struct ThreadInfo<T>
 {
     public readonly Action<T> m_callback;
     public readonly T m_parameter;
 
-    public ThreadInfo (Action<T> callback, T parameter)
+    public ThreadInfo(Action<T> callback)
+    {
+        m_callback = callback;
+        m_parameter = default(T);
+    }
+
+    public ThreadInfo(Action<T> callback, T parameter)
     {
         m_callback = callback;
         m_parameter = parameter;

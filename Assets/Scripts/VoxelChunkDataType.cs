@@ -9,30 +9,34 @@ public class VoxelChunkDataType {
 
     public VoxelSystem m_system;
     public Vector3 m_postion;
-    public int m_size;
     public VoxelDataType[, ,] m_voxels;
+    public int m_width { get { return m_system.m_chunkWidth; } }
+    public int m_height { get { return m_system.m_chunkHeight; } }
 
-    public VoxelChunkDataType(VoxelSystem system, Vector3 position, int size)
+    public VoxelChunkDataType(VoxelSystem system, Vector3 position)
     {
         m_system = system;
-        m_postion = position;
-
-        m_size = size;        
+        m_postion = position;    
     }
 
     public void GenerateNew()
     {
-        m_voxels = new VoxelDataType[m_size, m_size, m_size];
-        float density;
-        for (int x = 0; x < m_voxels.GetLength(0); x++)
+        m_voxels = new VoxelDataType[m_width, m_height, m_width];
+        for (int x = 0; x < m_width; x++)
         {
-            for (int y = 0; y < m_voxels.GetLength(1); y++)
+            for (int y = 0; y < m_height; y++)
             {
-                for (int z = 0; z < m_voxels.GetLength(2); z++)
+                for (int z = 0; z < m_width; z++)
                 {
-                    density = 100f - (new Vector3(x, y, z) + (m_postion * m_size) - Vector3.one * m_size * m_system.m_size / 2).magnitude;
-                    density += Noise3D.GetNoise(x + (int)m_postion.x * m_size, y + (int)m_postion.y * m_size, z + (int)m_postion.z * m_size, m_system.m_noiseScale) * 10;
-                    //density = Mathf.Clamp(density, -1, 1); //TODO: Remap, Estimate min, max
+                    int wsx = x + (int)m_postion.x * m_width;
+                    int wsy = y + (int)m_postion.y * m_height;
+                    int wsz = z + (int)m_postion.z * m_width;
+
+                    float density = -wsy + 64;
+                    density += Mathf.PerlinNoise(wsx / 75f, wsz / 75f) * 32f;
+                    density += Mathf.PerlinNoise(wsx / 50f, wsz / 50f) * 12f;
+                    density += Mathf.PerlinNoise(wsx / 10f, wsz / 10f) * 3f;
+
                     m_voxels[x, y, z] = new VoxelDataType(density);
                 }
             }

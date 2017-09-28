@@ -312,13 +312,13 @@ public class VoxelChunk : MonoBehaviour {
     {
         MeshData meshData = new MeshData();
 
-        for (int x = 0; x < m_data.m_voxels.GetLength(0); x++)
+        for (int x = 0; x < m_data.m_width; x++)
         {
-            for (int y = 0; y < m_data.m_voxels.GetLength(1); y++)
+            for (int y = 0; y < m_data.m_height; y++)
             {
-                for (int z = 0; z < m_data.m_voxels.GetLength(2); z++)
+                for (int z = 0; z < m_data.m_width; z++)
                 {
-                    byte c = m_data.m_system.GetCase(x + (int)m_data.m_postion.x * m_data.m_size, y + (int)m_data.m_postion.y * m_data.m_size, z + (int)m_data.m_postion.z * m_data.m_size);
+                    byte c = m_data.m_system.GetCase(x + (int)m_data.m_postion.x * m_data.m_width, y + (int)m_data.m_postion.y, z + (int)m_data.m_postion.z * m_data.m_width);
 
                     if (edgeTable[c] == 0)
                         continue;
@@ -365,13 +365,13 @@ public class VoxelChunk : MonoBehaviour {
     {
         MeshData meshData = new MeshData();
 
-        for (int x = 0; x < m_data.m_voxels.GetLength(0); x++)
+        for (int x = 0; x < m_data.m_width; x++)
         {
-            for (int y = 0; y < m_data.m_voxels.GetLength(1); y++)
+            for (int y = 0; y < m_data.m_height; y++)
             {
-                for (int z = 0; z < m_data.m_voxels.GetLength(2); z++)
+                for (int z = 0; z < m_data.m_width; z++)
                 {
-                    byte c = m_data.m_system.GetCase(x + (int)m_data.m_postion.x * m_data.m_size, y + (int)m_data.m_postion.y * m_data.m_size, z + (int)m_data.m_postion.z * m_data.m_size);
+                    byte c = m_data.m_system.GetCase(x + (int)m_data.m_postion.x * m_data.m_width, y + (int)m_data.m_postion.y * m_data.m_height, z + (int)m_data.m_postion.z * m_data.m_width);
 
                     int edges = edgeTable[c];
                     if (edges == 0)
@@ -387,7 +387,7 @@ public class VoxelChunk : MonoBehaviour {
                     points[6] = new Vector3(x + 1, y + 1, z + 1); //6
                     points[7] = new Vector3(x, y + 1, z + 1); //7
 
-                    float[] values = m_data.m_system.GetValues(x + (int)m_data.m_postion.x * m_data.m_size, y + (int)m_data.m_postion.y * m_data.m_size, z + (int)m_data.m_postion.z * m_data.m_size);
+                    float[] values = m_data.m_system.GetValues(x + (int)m_data.m_postion.x * m_data.m_width, y + (int)m_data.m_postion.y * m_data.m_height, z + (int)m_data.m_postion.z * m_data.m_width);
 
 
                     Vector3[] intersectionVertices = new Vector3[12];
@@ -429,13 +429,13 @@ public class VoxelChunk : MonoBehaviour {
     public void UpdateSimpleMesh()
     {
         List<CombineInstance> combine = new List<CombineInstance>();
-        for (int x = 0; x < m_data.m_voxels.GetLength(0); x++)
+        for (int x = 0; x < m_data.m_width; x++)
         {
-            for (int y = 0; y < m_data.m_voxels.GetLength(1); y++)
+            for (int y = 0; y < m_data.m_height; y++)
             {
-                for (int z = 0; z < m_data.m_voxels.GetLength(2); z++)
+                for (int z = 0; z < m_data.m_width; z++)
                 {
-                    byte c = m_data.m_system.GetCase(x + (int)m_data.m_postion.x * m_data.m_size, y + (int)m_data.m_postion.y * m_data.m_size, z + (int)m_data.m_postion.z * m_data.m_size);
+                    byte c = m_data.m_system.GetCase(x + (int)m_data.m_postion.x * m_data.m_width, y + (int)m_data.m_postion.y, z + (int)m_data.m_postion.z * m_data.m_width);
                     if (c == 0 || c == 255)
                         continue;
                     CombineInstance combineInstance = new CombineInstance();
@@ -461,19 +461,19 @@ public class VoxelChunk : MonoBehaviour {
         if (m_data.m_system.m_drawChunkOutline)
         {
             Gizmos.color = Color.blue;
-            Gizmos.DrawWireCube(m_data.m_postion * m_data.m_size + Vector3.one * m_data.m_size / 2, Vector3.one * m_data.m_size);
+            Gizmos.DrawWireCube(new Vector3(m_data.m_postion.x * m_data.m_width, m_data.m_postion.y * m_data.m_height, m_data.m_postion.z * m_data.m_width) + new Vector3(m_data.m_width, m_data.m_height, m_data.m_width) / 2, new Vector3(m_data.m_width, m_data.m_height, m_data.m_width));
         }
         if (DebugDensity)
         {
-            for (int x = 0; x < m_data.m_voxels.GetLength(0); x++)
+            for (int x = 0; x < m_data.m_width; x++)
             {
-                for (int y = 0; y < m_data.m_voxels.GetLength(1); y++)
+                for (int y = 0; y < m_data.m_height; y++)
                 {
-                    for (int z = 0; z < m_data.m_voxels.GetLength(2); z++)
+                    for (int z = 0; z < m_data.m_width; z++)
                     {
-                        Gizmos.color = Color.HSVToRGB(Mathf.InverseLerp(0f, 2f, m_data.m_voxels[x, y, z].m_density), 1, 1);
+                        Gizmos.color = Color.gray;
                         //Gizmos.DrawCube(new Vector3(x, y, z) + Vector3.one / 2 + m_data.m_postion * m_data.m_size, Vector3.one * 0.3f);
-                        Gizmos.DrawCube(new Vector3(x, y, z) + m_data.m_postion * m_data.m_size, Vector3.one * 0.3f);
+                        Gizmos.DrawWireCube(new Vector3(x + m_data.m_postion.x * m_data.m_width, y + m_data.m_postion.y * m_data.m_height, z + m_data.m_postion.z * m_data.m_width), Vector3.one * 0.1f);
                     }
                 }
             }
@@ -491,27 +491,49 @@ public class VoxelChunk : MonoBehaviour {
 
     public void GenerateMesh()
     {
-        ThreadStart threadStart = delegate {
-            GenerateMeshThread(RecievedMeshData);
-        };
+        GenerateMeshThreadInfo info = new GenerateMeshThreadInfo(RecievedMeshData);
+        ThreadPool.QueueUserWorkItem(new WaitCallback(GenerateMeshThread), info);
+        //ThreadStart threadStart = delegate {
+        //    GenerateMeshThread(RecievedMeshData);
+        //};
 
-        new Thread(threadStart).Start();
+        //new Thread(threadStart).Start();
     }
 
-    void GenerateMeshThread(Action<MeshData> callback)
-    {
-        while (m_data == null)
-            Thread.Sleep(100);
+    //void GenerateMeshThread(Action<MeshData> callback)
+    //{
+    //    //if (m_data == null)
+    //    //{
+    //    //    Debug.LogWarning("No Data");
+    //    //    return;
+    //    //}
+    //    //while (m_data == null)
+    //    //    Thread.Sleep(100);
 
+    //    MeshData meshData;
+    //    if (m_data.m_system.m_displayMode == VoxelSystem.DisplayMode.Density)
+    //        meshData = DrawDensity();
+    //    else
+    //        meshData = DrawNoDensity(); 
+
+    //    lock (m_data.m_system.m_meshDataInfoQueue)
+    //    {
+    //        m_data.m_system.m_meshDataInfoQueue.Enqueue(new ThreadInfo<MeshData>(callback, meshData));
+    //    }
+    //}
+
+    void GenerateMeshThread(object obj)
+    {
+        GenerateMeshThreadInfo info = obj as GenerateMeshThreadInfo;
         MeshData meshData;
         if (m_data.m_system.m_displayMode == VoxelSystem.DisplayMode.Density)
             meshData = DrawDensity();
         else
-            meshData = DrawNoDensity(); 
+            meshData = DrawNoDensity();
 
         lock (m_data.m_system.m_meshDataInfoQueue)
         {
-            m_data.m_system.m_meshDataInfoQueue.Enqueue(new ThreadInfo<MeshData>(callback, meshData));
+            m_data.m_system.m_meshDataInfoQueue.Enqueue(new ThreadInfo<MeshData>(info.m_callback, meshData));
         }
     }
 
@@ -520,6 +542,16 @@ public class VoxelChunk : MonoBehaviour {
         GetComponent<MeshFilter>().mesh = meshData.CreateMesh();
         GetComponent<MeshRenderer>().sharedMaterial = m_data.m_system.m_material;
         GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.TwoSided;
+    }
+
+    public class GenerateMeshThreadInfo
+    {
+        public readonly Action<MeshData> m_callback;
+
+        public GenerateMeshThreadInfo(Action<MeshData> callback)
+        {
+            m_callback = callback;
+        }
     }
 
 }
